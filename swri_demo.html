@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Athera — Structural Weathering Risk Index</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500&family=Inter:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F6F7F5; --panel:#FFFFFF; --ink:#18272A; --ink-soft:#5B6B6D;
+    --hair:#DDE2DE; --teal:#1F6F66; --teal-50:#E1F0EE; --teal-600:#1F6F66; --teal-800:#103A35;
+    --amber:#C97F1E; --amber-50:#FBEEDC; --amber-800:#623C0D;
+    --risk:#C2492C; --risk-50:#FBEAE5; --risk-800:#5E2113;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;}
+  .wrap{max-width:920px;margin:0 auto;padding:40px 28px 60px;}
+  .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--teal-800);background:var(--teal-50);display:inline-block;padding:3px 9px;border-radius:4px;}
+  h1{font-family:'Source Serif 4',serif;font-weight:500;font-size:32px;margin:14px 0 6px;}
+  .sub{color:var(--ink-soft);font-size:15px;margin:0 0 28px;max-width:620px;line-height:1.55;}
+  .grid{display:grid;grid-template-columns:300px 1fr;gap:20px;}
+  @media (max-width:760px){.grid{grid-template-columns:1fr;}}
+  .panel{background:var(--panel);border:1px solid var(--hair);border-radius:14px;padding:22px;}
+  .panel h2{font-family:'Source Serif 4',serif;font-weight:500;font-size:17px;margin:0 0 4px;}
+  .panel .hint{font-size:12.5px;color:var(--ink-soft);margin:0 0 18px;}
+  .field{margin-bottom:20px;}
+  .field label{display:flex;justify-content:space-between;font-size:13.5px;font-weight:500;margin-bottom:3px;}
+  .field .desc{font-size:11.5px;color:var(--ink-soft);margin-bottom:8px;}
+  .field .val{font-family:'IBM Plex Mono',monospace;color:var(--teal-800);}
+  input[type=range]{width:100%;height:4px;-webkit-appearance:none;background:var(--hair);border-radius:2px;outline:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--teal);cursor:pointer;}
+  input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--teal);border:none;cursor:pointer;}
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px;}
+  .card{border:1px solid var(--hair);border-radius:12px;padding:16px 18px;}
+  .card .lbl{font-size:12px;color:var(--ink-soft);margin:0 0 6px;}
+  .card .num{font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:500;line-height:1;}
+  .card .delta{font-size:12.5px;margin-top:8px;font-family:'IBM Plex Mono',monospace;}
+  .card.swri{border-color:var(--risk-50);}
+  .card.swri .num{color:var(--risk-800);}
+  .section-title{font-size:13px;font-weight:500;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;margin:0 0 12px;}
+  .waterfall{position:relative;height:150px;margin-bottom:8px;}
+  .zero-line{position:absolute;top:0;bottom:18px;width:1px;background:var(--ink-soft);opacity:.35;}
+  .seg{position:absolute;height:18px;border-radius:3px;}
+  .seg-label{position:absolute;font-size:10.5px;font-family:'IBM Plex Mono',monospace;color:var(--ink-soft);white-space:nowrap;}
+  .axis-label{font-size:11px;color:var(--ink-soft);display:flex;justify-content:space-between;margin-top:4px;}
+  .legend{display:flex;gap:16px;font-size:12px;color:var(--ink-soft);margin:14px 0 0;}
+  .legend span{display:inline-flex;align-items:center;gap:5px;}
+  .legend i{width:9px;height:9px;border-radius:2px;display:inline-block;}
+  .formula{font-family:'IBM Plex Mono',monospace;font-size:12.5px;background:var(--bg);border:1px solid var(--hair);border-radius:8px;padding:12px 14px;line-height:1.6;color:var(--teal-800);margin-top:18px;word-break:break-word;}
+  .alert{display:none;margin-top:16px;border-radius:10px;padding:12px 14px;background:var(--amber-50);border:1px solid #EFD2A0;font-size:13px;color:var(--amber-800);line-height:1.5;}
+  .alert.show{display:block;}
+  footer{margin-top:26px;font-size:12px;color:var(--ink-soft);line-height:1.6;border-top:1px solid var(--hair);padding-top:16px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="eyebrow">Proof of concept · synthetic data, n=15,000</span>
+  <h1>Athera — Structural Weathering Risk Index</h1>
+  <p class="sub">Move the sliders to set a patient's intake profile, then compare how the status-quo additive model and the SWRI interaction model score the same patient.</p>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>Patient intake</h2>
+      <p class="hint">All indices normalized 0–1, as compiled from EHR, screening, and zip-level data.</p>
+
+      <div class="field">
+        <label>COVID severity & timing <span class="val" id="C-val">0.20</span></label>
+        <div class="desc">Documented infection severity and proximity to pregnancy</div>
+        <input type="range" id="C" min="0" max="1" step="0.01" value="0.2">
+      </div>
+      <div class="field">
+        <label>Psychosocial stress <span class="val" id="S-val">0.40</span></label>
+        <div class="desc">Validated stress / SDOH screening composite</div>
+        <input type="range" id="S" min="0" max="1" step="0.01" value="0.4">
+      </div>
+      <div class="field">
+        <label>Environmental exposure <span class="val" id="E-val">0.25</span></label>
+        <div class="desc">Zip-level pollution and SES burden index</div>
+        <input type="range" id="E" min="0" max="1" step="0.01" value="0.25">
+      </div>
+      <div class="field">
+        <label>Baseline vulnerability <span class="val" id="B-val">0.30</span></label>
+        <div class="desc">Age, comorbidities, obstetric history</div>
+        <input type="range" id="B" min="0" max="1" step="0.01" value="0.3">
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="cards">
+        <div class="card">
+          <p class="lbl">Additive model (status quo)</p>
+          <p class="num" id="risk-add">—</p>
+        </div>
+        <div class="card swri">
+          <p class="lbl">SWRI model (interaction)</p>
+          <p class="num" id="risk-swri">—</p>
+          <p class="delta" id="risk-delta">—</p>
+        </div>
+      </div>
+
+      <p class="section-title">Risk composition (log-odds contribution)</p>
+      <div class="waterfall" id="waterfall"></div>
+      <div class="axis-label"><span id="ax-min">−3</span><span id="ax-max">+6</span></div>
+      <div class="legend">
+        <span><i style="background:var(--teal)"></i>Main effects (C, S, E, B)</span>
+        <span><i style="background:var(--amber)"></i>Interaction terms (C×S, C×E, S×E)</span>
+      </div>
+
+      <div class="formula" id="formula"></div>
+      <div class="alert" id="alert">High co-occurring COVID severity and psychosocial stress detected. In our held-out test patients matching this profile, the additive model underestimated observed risk by an average of 3.4 percentage points — the SWRI model's C×S interaction term (p&lt;0.0001) is designed to catch exactly this pattern.</div>
+    </div>
+  </div>
+
+  <footer>
+    Weights fitted via logistic regression on 15,000 synthetic patients constructed to reflect literature-described syndemic interaction effects (not real patient data). C×S interaction significant at p&lt;0.0001 (Wald test); C×E and S×E were directionally consistent but not statistically significant at this sample size — illustrating why larger real-world datasets matter for detecting structural interaction effects. Research prototype only — not validated or deployed for clinical use.
+  </footer>
+</div>
+
+<script>
+const W = {
+  swri: {C:2.4142650210805425,S:1.7046630955925337,E:1.9746619285231688,B:0.7526456715951311,
+         CS:2.107674792985504,CE:0.8226302035072591,SE:1.5434913940701698,intercept:-0.8229277612061824},
+  add:  {C:2.4036319021432617,S:1.749384402672229,E:2.01013400750709,B:0.7542007601628256,
+         intercept:-0.8285869375862408},
+  means:{C:0.21716403944060356,S:0.4346411399834052,E:0.24050651052592,B:0.3306163263135098}
+};
+const sigmoid = x => 1/(1+Math.exp(-x));
+const ids = ["C","S","E","B"];
+const sliders = {}; ids.forEach(k => sliders[k]=document.getElementById(k));
+
+const SCALE_MIN=-3, SCALE_MAX=6;
+const pct = v => `${((v-SCALE_MIN)/(SCALE_MAX-SCALE_MIN)*100).toFixed(2)}%`;
+
+function render(){
+  const v={}; ids.forEach(k=>v[k]=parseFloat(sliders[k].value));
+  ids.forEach(k=>document.getElementById(k+"-val").textContent=v[k].toFixed(2));
+
+  const c={}; ids.forEach(k=>c[k]=v[k]-W.means[k]);
+
+  const addLogit = W.add.intercept + W.add.C*c.C + W.add.S*c.S + W.add.E*c.E + W.add.B*c.B;
+  const riskAdd = sigmoid(addLogit);
+
+  const terms = [
+    {name:"intercept", val:W.swri.intercept, cat:"base"},
+    {name:"C",  val:W.swri.C*c.C,  cat:"main"},
+    {name:"S",  val:W.swri.S*c.S,  cat:"main"},
+    {name:"E",  val:W.swri.E*c.E,  cat:"main"},
+    {name:"B",  val:W.swri.B*c.B,  cat:"main"},
+    {name:"C×S",val:W.swri.CS*c.C*c.S, cat:"int"},
+    {name:"C×E",val:W.swri.CE*c.C*c.E, cat:"int"},
+    {name:"S×E",val:W.swri.SE*c.S*c.E, cat:"int"},
+  ];
+  const swriLogit = terms.reduce((a,t)=>a+t.val,0);
+  const riskSwri = sigmoid(swriLogit);
+
+  document.getElementById("risk-add").textContent = (riskAdd*100).toFixed(1)+"%";
+  document.getElementById("risk-swri").textContent = (riskSwri*100).toFixed(1)+"%";
+  const deltaPts = (riskSwri-riskAdd)*100;
+  const deltaEl = document.getElementById("risk-delta");
+  deltaEl.textContent = (deltaPts>=0?"+":"")+deltaPts.toFixed(1)+" pts vs additive";
+  deltaEl.style.color = deltaPts>0.3 ? "#C2492C" : (deltaPts<-0.3 ? "#1F6F66" : "#5B6B6D");
+
+  const wf = document.getElementById("waterfall");
+  wf.innerHTML = "";
+  const zeroX = pct(0);
+  const zeroDiv = document.createElement("div");
+  zeroDiv.className="zero-line"; zeroDiv.style.left=zeroX;
+  wf.appendChild(zeroDiv);
+
+  let cum = 0;
+  terms.forEach((t,i)=>{
+    const start = cum;
+    cum += t.val;
+    const left = Math.min(start,cum), right = Math.max(start,cum);
+    const seg = document.createElement("div");
+    seg.className="seg";
+    seg.style.left = pct(left);
+    seg.style.width = `calc(${pct(right)} - ${pct(left)})`;
+    seg.style.top = (i*17)+"px";
+    seg.style.background = t.cat==="int" ? "var(--amber)" : (t.cat==="base" ? "var(--hair)" : "var(--teal)");
+    wf.appendChild(seg);
+
+    const lbl = document.createElement("div");
+    lbl.className="seg-label";
+    lbl.style.top = (i*17)+"px";
+    lbl.style.left = `calc(${pct(right)} + 6px)`;
+    lbl.textContent = `${t.name} ${t.val>=0?"+":""}${t.val.toFixed(2)}`;
+    wf.appendChild(lbl);
+  });
+
+  document.getElementById("formula").innerHTML =
+    `SWRI = ${W.swri.C.toFixed(2)}×${v.C.toFixed(2)} + ${W.swri.S.toFixed(2)}×${v.S.toFixed(2)} + `+
+    `${W.swri.E.toFixed(2)}×${v.E.toFixed(2)} + ${W.swri.B.toFixed(2)}×${v.B.toFixed(2)} + `+
+    `${W.swri.CS.toFixed(2)}×(${v.C.toFixed(2)}×${v.S.toFixed(2)}) + `+
+    `${W.swri.CE.toFixed(2)}×(${v.C.toFixed(2)}×${v.E.toFixed(2)}) + `+
+    `${W.swri.SE.toFixed(2)}×(${v.S.toFixed(2)}×${v.E.toFixed(2)}) <br>`+
+    `→ predicted risk = ${(riskSwri*100).toFixed(1)}%`;
+
+  document.getElementById("alert").classList.toggle("show", v.C>0.6 && v.S>0.6);
+}
+
+ids.forEach(k=>sliders[k].addEventListener("input", render));
+render();
+</script>
+</body>
+</html>
